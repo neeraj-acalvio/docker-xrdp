@@ -2159,7 +2159,10 @@ xrdp_wm_mod_connect_done(struct xrdp_wm *self, int status)
     else
     {
         xrdp_wm_set_login_state(self, WMLS_INACTIVE);
-        xrdp_wm_show_log(self);
+        if (!g_is_wait_obj_set(self->pro_layer->self_term_event))
+        {
+            xrdp_wm_show_log(self);
+        }
     }
 }
 

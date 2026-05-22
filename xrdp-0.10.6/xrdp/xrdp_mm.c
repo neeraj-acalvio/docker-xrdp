@@ -2840,21 +2840,20 @@ xrdp_mm_process_login_response(struct xrdp_mm *self)
                                 self->wm->pamerrortxt);
             }
 
-            if (self->wm->client_info->require_credentials)
+            if (login_result == E_SCP_LOGIN_NOT_AUTHENTICATED ||
+                    self->wm->client_info->require_credentials)
             {
-                /* Credentials had to be specified, but were invalid */
+                /* Invalid credentials - close the RDP connection without
+                 * showing the log window or remote desktop */
+                LOG(LOG_LEVEL_INFO,
+                    "Authentication failed, closing RDP connection");
                 g_set_wait_obj(self->wm->pro_layer->self_term_event);
-                LOG(LOG_LEVEL_ERROR, "require_credentials is set, "
-                    "but the user could not be logged in");
+                self->delete_sesman_trans = 1;
+                return rv;
             }
 
             if (server_closed)
             {
-                if (login_result == E_SCP_LOGIN_NOT_AUTHENTICATED)
-                {
-                    xrdp_wm_log_msg(self->wm, LOG_LEVEL_INFO, "%s",
-                                    "Login retry limit reached");
-                }
                 xrdp_wm_log_msg(self->wm, LOG_LEVEL_INFO, "%s",
                                 "Close the log window to exit.");
                 self->wm->fatal_error_in_log_window = 1;
