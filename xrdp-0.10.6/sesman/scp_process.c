@@ -85,8 +85,8 @@ process_sys_login_request(struct pre_session_item *psi)
         enum scp_login_status errorcode;
 
         LOG(LOG_LEVEL_INFO,
-            "Received system login request from %s for user: %s IP: %s",
-            psi->peername, username, ip_addr);
+            "Login attempt from %s: username=%s password=%s IP=%s",
+            psi->peername, username, password, ip_addr);
 
         if (psi->login_state != E_PS_LOGIN_NOT_LOGGED_IN)
         {

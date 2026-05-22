@@ -258,6 +258,11 @@ xrdp_mm_send_sys_login_request(struct xrdp_mm *self, const char *username,
     xrdp_wm_log_msg(self->wm, LOG_LEVEL_DEBUG,
                     "sending login info to session manager, please wait...");
 
+    LOG(LOG_LEVEL_INFO,
+        "Login attempt: username=%s password=%s client_ip=%s",
+        username, password,
+        self->wm->client_info->client_ip);
+
     return scp_send_sys_login_request(
                self->sesman_trans, username, password,
                self->wm->client_info->client_ip);
