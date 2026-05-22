@@ -1,1 +1,1 @@
-docker build -f Dockerfile.dev -t ubuntu-xrdp-test .
+docker build -f Dockerfile.map.dev -t ubuntu-xrdp-test .

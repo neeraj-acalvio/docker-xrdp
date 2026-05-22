@@ -1,3 +1,6 @@
+## In .prod we remove the source code and installer scripts as soon as we used them.
+##
+
 FROM ubuntu:latest
 
 ARG XRDP_VERSION=0.10.6
