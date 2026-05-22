@@ -28,4 +28,20 @@ RUN wget -v "https://github.com/neutrinolabs/xrdp/releases/download/v${XRDP_VERS
     && ./configure --with-systemdsystemunitdir=/usr/lib/systemd/system \
     && make -j"$(nproc)" \
     && make install \
-    && rm -rf /tmp/xrdp.tar.gz "/tmp/xrdp-${XRDP_VERSION}"    
+    && rm -rf /tmp/xrdp.tar.gz "/tmp/xrdp-${XRDP_VERSION}"
+
+# Symlink binaries and prepare runtime dirs (systemd is not available in containers)
+RUN ln -sf /usr/local/sbin/xrdp /usr/sbin/xrdp \
+    && ln -sf /usr/local/sbin/xrdp-sesman /usr/sbin/xrdp-sesman \
+    && ln -sf /usr/local/sbin/xrdp-keygen /usr/sbin/xrdp-keygen \
+    && (getent group xrdp || groupadd -r xrdp) \
+    && (getent passwd xrdp || useradd -r -g xrdp -s /sbin/nologin -d /var/run/xrdp xrdp) \
+    && install -o root -g xrdp -m 2775 -d /var/run/xrdp \
+    && install -o root -g xrdp -m 3777 -d /var/run/xrdp/sockdir
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 3389
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
