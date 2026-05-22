@@ -1,0 +1,45 @@
+FROM ubuntu:latest
+
+ARG XRDP_VERSION=0.10.6
+ARG XRDP_INSTALL_SCRIPT=install_xrdp_build_dependencies_with_apt.sh
+
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    vim \
+    net-tools \
+    iputils-ping 
+
+RUN mkdir -p /opt/xrdp    
+
+# Install xrdp build dependencies (script is not bundled in release tarballs)
+RUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates \
+    && wget -v "https://raw.githubusercontent.com/neutrinolabs/xrdp/v${XRDP_VERSION}/scripts/${XRDP_INSTALL_SCRIPT}" -O /opt/xrdp/${XRDP_INSTALL_SCRIPT} \
+    && chmod +x /opt/xrdp/${XRDP_INSTALL_SCRIPT} \
+    && sed -i 's/apt-get upgrade$/apt-get upgrade -y/' /opt/xrdp/${XRDP_INSTALL_SCRIPT} \
+    && /opt/xrdp/${XRDP_INSTALL_SCRIPT} max 
+
+
+# Download, build, and install xrdp from source
+RUN wget -v "https://github.com/neutrinolabs/xrdp/releases/download/v${XRDP_VERSION}/xrdp-${XRDP_VERSION}.tar.gz" -O /opt/xrdp/xrdp-${XRDP_VERSION}.tar.gz \
+    && tar -xzf /opt/xrdp/xrdp-${XRDP_VERSION}.tar.gz -C /opt/xrdp \
+    && cd "/opt/xrdp/xrdp-${XRDP_VERSION}" \
+    && ./configure --with-systemdsystemunitdir=/usr/lib/systemd/system \
+    && make -j"$(nproc)" \
+    && make install 
+
+# Symlink binaries and prepare runtime dirs (systemd is not available in containers)
+RUN ln -sf /usr/local/sbin/xrdp /usr/sbin/xrdp \
+    && ln -sf /usr/local/sbin/xrdp-sesman /usr/sbin/xrdp-sesman \
+    && ln -sf /usr/local/sbin/xrdp-keygen /usr/sbin/xrdp-keygen \
+    && (getent group xrdp || groupadd -r xrdp) \
+    && (getent passwd xrdp || useradd -r -g xrdp -s /sbin/nologin -d /var/run/xrdp xrdp) \
+    && install -o root -g xrdp -m 2775 -d /var/run/xrdp \
+    && install -o root -g xrdp -m 3777 -d /var/run/xrdp/sockdir
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 3389
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
